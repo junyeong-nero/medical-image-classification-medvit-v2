@@ -37,6 +37,36 @@ model_classes = {
 }
 
 
+def get_device():
+    """
+    Automatically detect and return the best available device.
+    Priority: CUDA > MPS > CPU
+
+    Returns:
+        torch.device: The best available device for training
+    """
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        device_name = torch.cuda.get_device_name(0)
+        print(f"Using CUDA device: {device_name}")
+        return device
+
+    # Try MPS (Apple Silicon) with fallback to CPU
+    try:
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            device = torch.device("mps")
+            print("Using MPS (Apple Silicon) device")
+            return device
+    except Exception as e:
+        print(f"MPS device detection failed: {e}")
+        print("Falling back to CPU")
+
+    # Default to CPU
+    device = torch.device("cpu")
+    print("Using CPU device")
+    return device
+
+
 # Define the MNIST training routine
 def train_mnist(
     epochs,
@@ -246,11 +276,14 @@ def train(
 
 
 def main(args):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    print("Using {} device.".format(device))
+    device = get_device()
     model_name = args.model_name
     dataset_name = args.dataset
     pretrained = args.pretrained
+
+    # Create directories for weights
+    os.makedirs("weights", exist_ok=True)
+    os.makedirs("weights/pretrained", exist_ok=True)
     if args.dataset.endswith("mnist"):
         info = INFO[args.dataset]
         task = info["task"]
@@ -281,16 +314,24 @@ def main(args):
                     raise ValueError(
                         f"Checkpoint URL for model {model_name} not found."
                     )
-                download_checkpoint(checkpoint_url, f"./{model_name}.pth")
-                checkpoint_path = f"./{model_name}.pth"
+                # Download to weights/pretrained/
+                pretrained_path = f"weights/pretrained/{model_name}.pth"
+                download_checkpoint(checkpoint_url, pretrained_path)
+                checkpoint_path = pretrained_path
 
-            checkpoint = torch.load(checkpoint_path)
+            print(f"Loading checkpoint from: {checkpoint_path}")
+            # Note: weights_only=False is used because we trust our own pretrained checkpoints
+            # which may contain numpy objects. Only load checkpoints from trusted sources.
+            checkpoint = torch.load(
+                checkpoint_path, map_location=device, weights_only=False
+            )
             state_dict = net.state_dict()
             for k in ["proj_head.0.weight", "proj_head.0.bias"]:
                 if k in checkpoint and checkpoint[k].shape != state_dict[k].shape:
                     print(f"Removing key {k} from pretrained checkpoint")
                     del checkpoint[k]
             net.load_state_dict(checkpoint, strict=False)
+            print("Checkpoint loaded successfully")
     else:
         net = timm.create_model(
             model_name, pretrained=pretrained, num_classes=nb_classes
@@ -313,7 +354,8 @@ def main(args):
     print(test_dataset)
 
     epochs = args.epochs
-    save_path = f"./{model_name}_{dataset_name}.pth"
+    # Save trained models to weights/ directory
+    save_path = f"weights/{model_name}_{dataset_name}.pth"
 
     if dataset_name.endswith("mnist"):
         train_mnist(
@@ -367,8 +409,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--checkpoint_path",
         type=str,
-        default="./checkpoint/MedViT_tiny.pth",
-        help="Path to the checkpoint file.",
+        default="weights/pretrained/MedViT_tiny.pth",
+        help="Path to the pretrained checkpoint file.",
     )
     parser.add_argument(
         "--image_column",

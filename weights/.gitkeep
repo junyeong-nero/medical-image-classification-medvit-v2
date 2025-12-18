@@ -1,0 +1,2 @@
+# This directory stores trained model checkpoints
+# Checkpoint naming: {model_name}_{dataset_name}.pth

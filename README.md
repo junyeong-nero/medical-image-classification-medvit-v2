@@ -14,6 +14,7 @@ This project implements an automated brain tumor classification system that can 
 - **Comprehensive Metrics**: Accuracy, precision, recall, F1-score, specificity, and AUC-ROC
 - **Easy Training**: Simple command-line interface with customizable hyperparameters
 - **Extensible Dataset Support**: Works with any HuggingFace image classification dataset
+- **Multi-Device Support**: Automatic detection and support for CUDA, MPS (Apple Silicon), and CPU
 
 ## Dataset
 
@@ -54,15 +55,23 @@ MedViT-v2 is a hybrid architecture that combines convolutional operations with t
 - `MedViT_large` - Maximum performance
 
 **Key Technologies**:
-- **NATTEN**: Neighborhood Attention for efficient local attention
+- **NATTEN**: Neighborhood Attention for efficient local attention (CUDA optimized, with automatic fallback to standard attention on MPS/CPU)
 - **FasterKAN**: Fast Kolmogorov-Arnold Network implementation
 - **ECA/SE Modules**: Efficient channel and squeeze-excitation attention
+
+**Device Compatibility**:
+The model automatically adapts to your hardware:
+- On **CUDA (NVIDIA)**: Uses optimized NATTEN for best performance
+- On **MPS/CPU**: Automatically falls back to standard multi-head attention for compatibility
 
 ## Requirements
 
 - **Python**: 3.13 or higher
 - **Package Manager**: uv (recommended) or pip
-- **Hardware**: CUDA-capable GPU recommended (CPU supported)
+- **Hardware**:
+  - CUDA-capable GPU (NVIDIA) - Recommended for fastest training
+  - Apple Silicon (M1/M2/M3) with MPS - Good performance
+  - CPU - Supported but slower
 
 ### Dependencies
 
@@ -104,6 +113,40 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## Device Support
+
+The training script automatically detects and uses the best available device:
+
+### Automatic Device Detection
+
+The code follows this priority order:
+1. **CUDA** (NVIDIA GPU) - Fastest, recommended for large-scale training
+2. **MPS** (Apple Silicon M1/M2/M3) - Good performance on Mac
+3. **CPU** - Fallback option, works on all systems
+
+**No configuration needed!** The script automatically:
+- Detects the best available device
+- Loads checkpoints with correct device mapping
+- Handles device-specific operations
+
+### Device-Specific Notes
+
+**CUDA (NVIDIA GPU)**:
+- Requires CUDA-compatible PyTorch installation
+- Best performance for large models and datasets
+- Example output: `Using CUDA device: NVIDIA GeForce RTX 3090`
+
+**MPS (Apple Silicon)**:
+- Available on M1/M2/M3 Macs with macOS 12.3+
+- Significant speedup over CPU
+- Example output: `Using MPS (Apple Silicon) device`
+- Note: NATTEN (Neighborhood Attention) has limited MPS support, so the model automatically uses standard multi-head attention as a fallback for better compatibility
+
+**CPU**:
+- Works everywhere, no special requirements
+- Slower but reliable
+- Example output: `Using CPU device`
+
 ## Usage
 
 ### Quick Start - Training
@@ -142,10 +185,10 @@ uv run python src/train.py \
     --lr 0.00005 \
     --epochs 30 \
     --pretrained True \
-    --checkpoint_path ./checkpoint/MedViT_small.pth
+    --checkpoint_path weights/pretrained/MedViT_small.pth
 ```
 
-The pretrained weights will be automatically downloaded if not present.
+The pretrained weights will be automatically downloaded to `weights/pretrained/` if not present.
 
 ### Training with Custom HuggingFace Datasets
 
@@ -179,7 +222,7 @@ bash scripts/train_custom_dataset.sh
 | `--lr` | Learning rate | `0.0001` | Float (typical: 0.00001-0.001) |
 | `--epochs` | Number of epochs | `10` | Integer |
 | `--pretrained` | Use pretrained weights | `False` | `True` or `False` |
-| `--checkpoint_path` | Path to checkpoint | `./checkpoint/MedViT_tiny.pth` | String |
+| `--checkpoint_path` | Path to checkpoint | `weights/pretrained/MedViT_tiny.pth` | String |
 | `--image_column` | Image column name | `image` | Column name in HuggingFace dataset |
 | `--label_column` | Label column name | `label` | Column name in HuggingFace dataset |
 
@@ -224,7 +267,13 @@ Checkpoints are automatically saved when validation accuracy improves. Each chec
 - Best validation accuracy
 - Current epoch number
 
-**Checkpoint naming**: `{model_name}_{dataset_name}.pth`
+**Directory Structure**:
+- **Pretrained weights**: `weights/pretrained/` - Downloaded pretrained models
+- **Trained models**: `weights/` - Your trained model checkpoints
+
+**Checkpoint naming**: `weights/{model_name}_{dataset_name}.pth`
+
+**Security Note**: The code loads pretrained checkpoints with `weights_only=False` to support models that may contain NumPy objects. Only use checkpoints from trusted sources (official pretrained weights or your own training runs). Loading checkpoints from untrusted sources can result in arbitrary code execution.
 
 ## Project Structure
 
@@ -242,7 +291,9 @@ medical-test/
 ├── scripts/
 │   ├── train.sh               # Training shell script
 │   └── train_custom_dataset.sh  # Example for custom datasets
-├── checkpoint/                # Model checkpoints (created during training)
+├── weights/
+│   ├── pretrained/            # Downloaded pretrained models
+│   └── *.pth                  # Your trained model checkpoints
 ├── main.py                    # Entry point
 ├── pyproject.toml            # Project dependencies
 └── README.md

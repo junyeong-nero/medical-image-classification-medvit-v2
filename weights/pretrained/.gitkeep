@@ -1,0 +1,2 @@
+# This directory stores downloaded pretrained model weights
+# Pretrained weights are automatically downloaded here when using --pretrained True

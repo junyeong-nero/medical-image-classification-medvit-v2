@@ -19,7 +19,7 @@ echo ""
 uv run python src/train.py \
     --model_name MedViT_tiny \
     --dataset PranomVignesh/MRI-Images-of-Brain-Tumor \
-    --batch_size 16 \
+    --batch_size 4 \
     --lr 0.0001 \
     --epochs 50 \
     --pretrained True \

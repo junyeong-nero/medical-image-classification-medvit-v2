@@ -11,3 +11,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Model weights (but keep directory structure)
+weights/*.pth
+weights/pretrained/*.pth

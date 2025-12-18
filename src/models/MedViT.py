@@ -14,11 +14,46 @@ from einops import rearrange
 from timm.layers import DropPath, trunc_normal_
 from timm.models import register_model
 from torch import nn
-import natten
-from natten import NeighborhoodAttention2D as NeighborhoodAttention
+import warnings
 
-is_natten_post_017 = hasattr(natten, "context")
-# from utils import merge_pre_bn
+# Try to import NATTEN, but provide fallback if not available
+try:
+    import natten
+    from natten import NeighborhoodAttention2D as NeighborhoodAttention
+
+    is_natten_post_017 = hasattr(natten, "context")
+    NATTEN_AVAILABLE = True
+except (ImportError, RuntimeError) as e:
+    NATTEN_AVAILABLE = False
+    warnings.warn(f"NATTEN not available: {e}. Using standard attention as fallback.")
+
+
+def check_natten_device_support():
+    """
+    Check if NATTEN is compatible with the current device.
+    NATTEN primarily supports CUDA. MPS and CPU support may be limited.
+    """
+    if not NATTEN_AVAILABLE:
+        return False
+
+    # Check device compatibility
+    if torch.cuda.is_available():
+        return True  # NATTEN works well with CUDA
+
+    # For MPS and CPU, NATTEN support is limited
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        warnings.warn(
+            "NATTEN has limited MPS (Apple Silicon) support. "
+            "Using standard attention as fallback for better compatibility."
+        )
+        return False
+
+    # CPU support is also limited
+    warnings.warn(
+        "NATTEN has limited CPU support. "
+        "Using standard attention as fallback for better compatibility."
+    )
+    return False
 
 
 NORM_EPS = 1e-5
@@ -234,6 +269,60 @@ class SELayer(nn.Module):
         return x * y
 
 
+class StandardMultiHeadAttention(nn.Module):
+    """
+    Standard Multi-Head Attention as fallback when NATTEN is not available.
+    """
+
+    def __init__(
+        self,
+        embed_dim,
+        num_heads=8,
+        qkv_bias=True,
+        qk_scale=None,
+        proj_drop=0.0,
+        **kwargs,
+    ):
+        super().__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.head_dim = embed_dim // num_heads
+        self.scale = qk_scale or self.head_dim**-0.5
+
+        self.qkv = nn.Linear(embed_dim, embed_dim * 3, bias=qkv_bias)
+        self.proj = nn.Linear(embed_dim, embed_dim)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+    def forward(self, x):
+        # x shape: (B, H, W, C)
+        B, H, W, C = x.shape
+        N = H * W
+
+        # Reshape to (B, N, C)
+        x = x.view(B, N, C)
+
+        # QKV projection
+        qkv = (
+            self.qkv(x)
+            .reshape(B, N, 3, self.num_heads, self.head_dim)
+            .permute(2, 0, 3, 1, 4)
+        )
+        q, k, v = qkv[0], qkv[1], qkv[2]
+
+        # Attention
+        attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = attn.softmax(dim=-1)
+
+        # Apply attention to values
+        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
+        x = self.proj(x)
+        x = self.proj_drop(x)
+
+        # Reshape back to (B, H, W, C)
+        x = x.view(B, H, W, C)
+        return x
+
+
 class LocalityFeedForward(nn.Module):
     def __init__(
         self,
@@ -369,15 +458,29 @@ class LFP(nn.Module):
         self.patch_embed = PatchEmbed(in_channels, out_channels, stride)
         # self.mhca = MHCA(out_channels, head_dim)
         self.norm1 = norm_layer(out_channels)
-        self.attn = NeighborhoodAttention(
-            embed_dim=out_channels,
-            num_heads=(out_channels // head_dim),
-            kernel_size=7,
-            dilation=1,
-            qkv_bias=True,
-            qk_scale=None,
-            proj_drop=0.0,
-        )
+
+        # Use NATTEN if available and compatible with device, otherwise fallback
+        if check_natten_device_support():
+            self.attn = NeighborhoodAttention(
+                embed_dim=out_channels,
+                num_heads=(out_channels // head_dim),
+                kernel_size=7,
+                dilation=1,
+                qkv_bias=True,
+                qk_scale=None,
+                proj_drop=0.0,
+            )
+            self.use_natten = True
+        else:
+            self.attn = StandardMultiHeadAttention(
+                embed_dim=out_channels,
+                num_heads=(out_channels // head_dim),
+                qkv_bias=True,
+                qk_scale=None,
+                proj_drop=0.0,
+            )
+            self.use_natten = False
+
         self.attention_path_dropout = DropPath(path_dropout)
 
         self.conv = LocalityFeedForward(
@@ -695,6 +798,15 @@ class MedViT(nn.Module):
         )
 
         self.stage_out_idx = [sum(depths[: idx + 1]) - 1 for idx in range(len(depths))]
+
+        # Print attention mechanism being used
+        if check_natten_device_support():
+            print("Using Neighborhood Attention (NATTEN) for local attention")
+        else:
+            print(
+                "Using Standard Multi-Head Attention (NATTEN not compatible with current device)"
+            )
+
         print("initialize_weights...")
         self._initialize_weights()
 
