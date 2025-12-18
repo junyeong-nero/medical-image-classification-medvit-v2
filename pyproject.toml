@@ -1,0 +1,24 @@
+[project]
+name = "medical-test"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "accelerate>=1.12.0",
+    "datasets>=4.4.1",
+    "einops>=0.8.1",
+    "fastcan>=0.5.0",
+    "matplotlib>=3.10.8",
+    "medmnist>=3.0.2",
+    "natten>=0.21.1",
+    "numpy>=2.3.5",
+    "pandas>=2.3.3",
+    "scikit-learn>=1.8.0",
+    "timm>=1.0.22",
+    "torch>=2.9.1",
+    "torch-summary>=1.4.5",
+    "torchsummary>=1.5.1",
+    "torchvision>=0.24.1",
+    "transformers>=4.57.3",
+]
