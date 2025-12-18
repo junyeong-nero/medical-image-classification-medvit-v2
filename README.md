@@ -13,6 +13,7 @@ This project implements an automated brain tumor classification system that can 
 - **Pretrained Weights**: Optional pretrained models for transfer learning
 - **Comprehensive Metrics**: Accuracy, precision, recall, F1-score, specificity, and AUC-ROC
 - **Easy Training**: Simple command-line interface with customizable hyperparameters
+- **Extensible Dataset Support**: Works with any HuggingFace image classification dataset
 
 ## Dataset
 
@@ -146,6 +147,28 @@ uv run python src/train.py \
 
 The pretrained weights will be automatically downloaded if not present.
 
+### Training with Custom HuggingFace Datasets
+
+This project supports **any HuggingFace dataset** with image classification tasks! You can specify custom column names for images and labels:
+
+```bash
+uv run python src/train.py \
+    --model_name MedViT_tiny \
+    --dataset "username/your-dataset-name" \
+    --image_column "img" \
+    --label_column "category" \
+    --batch_size 32 \
+    --lr 0.0001 \
+    --epochs 50
+```
+
+Or use the provided script:
+
+```bash
+# Edit scripts/train_custom_dataset.sh to set your dataset details
+bash scripts/train_custom_dataset.sh
+```
+
 ### Training Arguments
 
 | Argument | Description | Default | Options |
@@ -157,6 +180,8 @@ The pretrained weights will be automatically downloaded if not present.
 | `--epochs` | Number of epochs | `10` | Integer |
 | `--pretrained` | Use pretrained weights | `False` | `True` or `False` |
 | `--checkpoint_path` | Path to checkpoint | `./checkpoint/MedViT_tiny.pth` | String |
+| `--image_column` | Image column name | `image` | Column name in HuggingFace dataset |
+| `--label_column` | Label column name | `label` | Column name in HuggingFace dataset |
 
 ### Dataset Inspection
 
@@ -215,7 +240,8 @@ medical-test/
 │   ├── inspect_dataset.py     # Dataset inspection utility
 │   └── utils.py               # Helper functions (download, etc.)
 ├── scripts/
-│   └── train.sh               # Training shell script
+│   ├── train.sh               # Training shell script
+│   └── train_custom_dataset.sh  # Example for custom datasets
 ├── checkpoint/                # Model checkpoints (created during training)
 ├── main.py                    # Entry point
 ├── pyproject.toml            # Project dependencies
@@ -268,7 +294,22 @@ uv run python src/train.py \
     --epochs 30
 ```
 
-### Example 5: Using timm Models
+### Example 5: Using Custom HuggingFace Dataset with Different Column Names
+
+```bash
+# Train on a custom dataset with different column names
+# For example, if your dataset has 'img' and 'category' columns
+uv run python src/train.py \
+    --model_name MedViT_tiny \
+    --dataset "username/custom-medical-dataset" \
+    --image_column "img" \
+    --label_column "category" \
+    --batch_size 32 \
+    --lr 0.0001 \
+    --epochs 50
+```
+
+### Example 6: Using timm Models
 
 ```bash
 # Train with a ResNet from timm library

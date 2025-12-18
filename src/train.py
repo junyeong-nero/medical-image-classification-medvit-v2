@@ -1,27 +1,16 @@
 import os
 import sys
 import warnings
-import numpy as np
-import matplotlib.pyplot as plt
 import argparse
-import requests
 import timm
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
 
-import torchvision.utils
-from torchvision import models
-import torchvision.datasets as dsets
-import torchvision.transforms as transforms
-from torchsummary import summary
 from dataset_builder import build_dataset
 from tqdm import tqdm
-import medmnist
 from medmnist import INFO, Evaluator
-from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-import natten
 from sklearn.metrics import (
     precision_score,
     recall_score,
@@ -31,12 +20,13 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import label_binarize
 from models.MedViT import MedViT_tiny, MedViT_small, MedViT_base, MedViT_large
+from utils import str2bool, model_urls, download_checkpoint
 
 # Suppress flex_attention warnings
 warnings.filterwarnings("ignore", message=".*return_lse is deprecated.*")
-warnings.filterwarnings("ignore", message=".*flex_attention called without torch.compile.*")
-
-# from models.MedViT import MedViT_small, MedViT_base, MedViT_large
+warnings.filterwarnings(
+    "ignore", message=".*flex_attention called without torch.compile.*"
+)
 
 
 model_classes = {
@@ -45,8 +35,6 @@ model_classes = {
     "MedViT_base": MedViT_base,
     "MedViT_large": MedViT_large,
 }
-
-from utils import *
 
 
 # Define the MNIST training routine
@@ -150,7 +138,7 @@ def overall_accuracy(conf_matrix):
     return tp_tn_sum / total_sum
 
 
-def train_other(
+def train(
     epochs,
     net,
     train_loader,
@@ -272,16 +260,10 @@ def main(args):
             loss_function = nn.CrossEntropyLoss()
     else:
         loss_function = nn.CrossEntropyLoss()
-    model_class = model_classes.get(model_name)
-
-    # if not model_class:
-    #     raise ValueError(f"Model {model_name} is not recognized. Available models: {list(model_classes.keys())}")
-
     batch_size = args.batch_size
     lr = args.lr
 
     train_dataset, test_dataset, nb_classes = build_dataset(args=args)
-    val_num = len(test_dataset)
     train_num = len(train_dataset)
 
     # scheduler max iteration
@@ -331,12 +313,9 @@ def main(args):
     print(test_dataset)
 
     epochs = args.epochs
-    best_acc = 0.0
     save_path = f"./{model_name}_{dataset_name}.pth"
-    train_steps = len(train_loader)
 
     if dataset_name.endswith("mnist"):
-
         train_mnist(
             epochs,
             net,
@@ -351,7 +330,7 @@ def main(args):
             task,
         )
     else:
-        train_other(
+        train(
             epochs,
             net,
             train_loader,
@@ -391,8 +370,18 @@ if __name__ == "__main__":
         default="./checkpoint/MedViT_tiny.pth",
         help="Path to the checkpoint file.",
     )
+    parser.add_argument(
+        "--image_column",
+        type=str,
+        default="image",
+        help="Name of the image column in the dataset.",
+    )
+    parser.add_argument(
+        "--label_column",
+        type=str,
+        default="label",
+        help="Name of the label column in the dataset.",
+    )
 
     args = parser.parse_args()
     main(args)
-
-# python main.py --model_name 'convnext_tiny' --dataset 'PAD'
