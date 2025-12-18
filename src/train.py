@@ -1,5 +1,6 @@
 import os
 import sys
+import warnings
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
@@ -30,6 +31,10 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import label_binarize
 from models.MedViT import MedViT_tiny, MedViT_small, MedViT_base, MedViT_large
+
+# Suppress flex_attention warnings
+warnings.filterwarnings("ignore", message=".*return_lse is deprecated.*")
+warnings.filterwarnings("ignore", message=".*flex_attention called without torch.compile.*")
 
 # from models.MedViT import MedViT_small, MedViT_base, MedViT_large
 
