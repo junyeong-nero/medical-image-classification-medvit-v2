@@ -355,7 +355,8 @@ def main(args):
 
     epochs = args.epochs
     # Save trained models to weights/ directory
-    save_path = f"weights/{model_name}_{dataset_name}.pth"
+    safe_dataset_name = dataset_name.replace("/", "_")
+    save_path = f"weights/{model_name}_{safe_dataset_name}.pth"
 
     if dataset_name.endswith("mnist"):
         train_mnist(
