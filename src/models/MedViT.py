@@ -11,8 +11,8 @@ from .fasterkan import FasterKAN as KAN
 import torch
 import torch.utils.checkpoint as checkpoint
 from einops import rearrange
-from timm.models.layers import DropPath, trunc_normal_
-from timm.models.registry import register_model
+from timm.layers import DropPath, trunc_normal_
+from timm.models import register_model
 from torch import nn
 import natten
 from natten import NeighborhoodAttention2D as NeighborhoodAttention
