@@ -1,4 +1,5 @@
 .claude/
+.ruff_cache/
 CLAUDE.md
 
 # Python-generated files

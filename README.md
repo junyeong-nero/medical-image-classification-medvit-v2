@@ -1,6 +1,6 @@
 # Brain Tumor Classification with MedViT-v2
 
-A deep learning project for classifying brain tumors from MRI images using **MedViT-v2** (Medical Vision Transformer).
+A deep learning project for classifying brain tumors from MRI images using **[MedViT-v2](https://github.com/Omid-Nejati/MedViTV2)** (Medical Vision Transformer).
 
 ## Overview
 
@@ -38,13 +38,15 @@ source .venv/bin/activate
 
 ## Usage
 
-### Quick Start
+### Training
+
+#### Quick Start
 Train a `MedViT_tiny` model with default settings:
 ```bash
 bash scripts/train.sh
 ```
 
-### Advanced Training
+#### Advanced Training
 Customize parameters like model size, batch size, and dataset:
 
 ```bash
@@ -56,7 +58,7 @@ uv run python src/train.py \
     --pretrained True
 ```
 
-**Common Arguments**:
+**Training Arguments**:
 | Argument | Description | Default |
 |----------|-------------|---------|
 | `--model_name` | Architecture (`MedViT_tiny`, `resnet50`, etc.) | `MedViT_tiny` |
@@ -65,14 +67,68 @@ uv run python src/train.py \
 | `--epochs` | Number of epochs | `10` |
 | `--pretrained` | Use pretrained weights | `False` |
 
+### Inference & Evaluation
+
+Run inference on datasets with optional comprehensive evaluation metrics:
+
+```bash
+# Quick inference with comprehensive evaluation
+bash scripts/inference.sh
+
+# Basic inference (accuracy only)
+uv run python src/inference.py \
+    --model_name MedViT_tiny \
+    --model_weights weights/MedViT_tiny_PranomVignesh_MRI-Images-of-Brain-Tumor.pth \
+    --dataset PranomVignesh/MRI-Images-of-Brain-Tumor \
+    --split test \
+    --batch_size 32
+
+# Comprehensive evaluation with all metrics
+uv run python src/inference.py \
+    --model_name MedViT_tiny \
+    --model_weights weights/MedViT_tiny_PranomVignesh_MRI-Images-of-Brain-Tumor.pth \
+    --dataset PranomVignesh/MRI-Images-of-Brain-Tumor \
+    --split test \
+    --batch_size 32 \
+    --evaluate True
+```
+
+**Arguments**:
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `--model_name` | Model architecture | Required |
+| `--model_weights` | Path to checkpoint file | Required |
+| `--dataset` | HuggingFace dataset name | Required |
+| `--split` | Dataset split | `test` |
+| `--batch_size` | Batch size | `32` |
+| `--evaluate` | Compute comprehensive metrics | `False` |
+| `--save_results` | Save predictions locally | `True` |
+| `--push_to_hub` | Push to HuggingFace Hub | `None` |
+| `--private_hub` | Make Hub repo private | `False` |
+
+**With `--evaluate True`**, computes comprehensive metrics:
+- Accuracy, Precision, Recall, F1-score (overall & per-class)
+- Specificity, AUC-ROC (overall & per-class)
+- Confusion Matrix
+- Support (samples per class)
+
+**Output**:
+- Predictions: `results/{model}_{dataset}_{split}.json` (when `--save_results True`)
+- Metrics: `results/{model}_{dataset}_{split}_metrics.json` (when `--evaluate True`)
+
 ## Project Structure
 
-- `src/models/`: MedViT-v2 architecture definitions.
-- `src/train.py`: Main training script.
-- `scripts/`: Helper shell scripts for training.
-- `weights/`: Stores trained models and checkpoints.
-
-## Citation & License
-
-If you use this work, please cite the original MedViT paper.
-License information: [Add License]
+```
+brain-tumor-classifier/
+├── src/
+│   ├── models/            # MedViT-v2 architecture definitions
+│   ├── train.py           # Training script
+│   ├── inference.py       # Inference & evaluation script
+│   ├── dataset_builder.py # Dataset loading and preprocessing
+│   └── utils.py           # Helper utilities
+├── scripts/
+│   ├── train.sh           # Training helper script
+│   └── inference.sh       # Inference helper script
+├── weights/               # Trained model checkpoints
+└── results/               # Predictions and metrics (JSON)
+```
