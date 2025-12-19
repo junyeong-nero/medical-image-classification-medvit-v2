@@ -134,8 +134,11 @@ def train_mnist(
         )
         # print(f'lr: {scheduler.get_last_lr()[-1]:.8f}')
         if val_accurate > best_acc:
-            print("\nSaving checkpoint...")
             best_acc = val_accurate
+            print(f"\n✓ New best AUC: {val_accurate:.4f}")
+            print(f"  Saving checkpoint to {save_path}")
+
+            # Save full checkpoint (for resuming training)
             state = {
                 "model": net.state_dict(),
                 "optimizer": optimizer.state_dict(),
@@ -144,6 +147,11 @@ def train_mnist(
                 "epoch": epoch,
             }
             torch.save(state, save_path)
+
+            # Save best model weights only (for inference)
+            best_weights_path = save_path.replace(".pth", "_best_weights.pth")
+            torch.save(net.state_dict(), best_weights_path)
+            print(f"  Best model weights saved to {best_weights_path}")
 
     print("Finished Training")
 
@@ -261,8 +269,11 @@ def train(
 
         # Save best model
         if val_accurate > best_acc:
-            print("\nSaving checkpoint...")
             best_acc = val_accurate
+            print(f"\n✓ New best validation accuracy: {best_acc:.4f}")
+            print(f"  Saving checkpoint to {save_path}")
+
+            # Save full checkpoint (for resuming training)
             state = {
                 "model": net.state_dict(),
                 "optimizer": optimizer.state_dict(),
@@ -271,6 +282,11 @@ def train(
                 "epoch": epoch,
             }
             torch.save(state, save_path)
+
+            # Save best model weights only (for inference)
+            best_weights_path = save_path.replace(".pth", "_best_weights.pth")
+            torch.save(net.state_dict(), best_weights_path)
+            print(f"  Best model weights saved to {best_weights_path}")
 
     print("Finished Training")
 
@@ -343,15 +359,25 @@ def main(args):
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=eta, eta_min=5e-6)
 
     train_loader = data.DataLoader(
-        dataset=train_dataset, batch_size=batch_size, shuffle=True
+        dataset=train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=4,  # Parallel data loading
+        pin_memory=True,  # Faster GPU transfer
+        persistent_workers=True,  # Reuse workers across epochs
     )
     test_loader = data.DataLoader(
-        dataset=test_dataset, batch_size=2 * batch_size, shuffle=False
+        dataset=test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
+        persistent_workers=True,
     )
 
-    print(train_dataset)
-    print("===================")
-    print(test_dataset)
+    # print(train_dataset)
+    # print("===================")
+    # print(test_dataset)
 
     epochs = args.epochs
     # Save trained models to weights/ directory

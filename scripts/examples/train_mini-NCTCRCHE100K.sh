@@ -11,7 +11,7 @@ set -e
 # - IMAGE_COLUMN: Column name containing images (e.g., "img", "image", "picture")
 # - LABEL_COLUMN: Column name containing labels (e.g., "label", "class", "category")
 
-DATASET_NAME="PranomVignesh/MRI-Images-of-Brain-Tumor"  # Replace with your dataset
+DATASET_NAME="junyeong-nero/mini-NCTCRCHE100K"  # Replace with your dataset
 IMAGE_COLUMN="image"  # Replace with your image column name
 LABEL_COLUMN="label"  # Replace with your label column name
 
@@ -29,10 +29,10 @@ echo ""
 uv run python src/train.py \
     --model_name MedViT_tiny \
     --dataset "$DATASET_NAME" \
-    --batch_size 8 \
+    --batch_size 4 \
     --lr 0.0001 \
     --epochs 50 \
-    --pretrained False \
+    --pretrained True \
     --image_column "$IMAGE_COLUMN" \
     --label_column "$LABEL_COLUMN"
 
