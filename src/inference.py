@@ -402,7 +402,7 @@ def save_metrics(metrics, save_path, class_names=None):
     print(f"\nMetrics saved to: {save_path}")
 
 
-def create_results_dataset(results, original_dataset, image_column="image"):
+def create_results_dataset(results, original_dataset, image_column="image", include_images=False):
     """
     Create a HuggingFace dataset with inference results.
 
@@ -410,6 +410,7 @@ def create_results_dataset(results, original_dataset, image_column="image"):
         results: Dictionary containing predictions and probabilities
         original_dataset: Original HuggingFace dataset split
         image_column: Name of the image column
+        include_images: Whether to include images (Note: images cannot be saved to JSON)
 
     Returns:
         HuggingFace Dataset with predictions added
@@ -426,8 +427,9 @@ def create_results_dataset(results, original_dataset, image_column="image"):
         data_dict["predicted_class"] = results["predicted_class_names"]
         data_dict["true_class"] = results["true_class_names"]
 
-    # Add images if they exist in the original dataset
-    if image_column in original_dataset.column_names:
+    # Add images only if explicitly requested
+    # Note: Including images will prevent saving to JSON format
+    if include_images and image_column in original_dataset.column_names:
         data_dict[image_column] = original_dataset[image_column]
 
     # Create dataset
@@ -509,8 +511,9 @@ def main(args):
     # Save results locally if requested
     if args.save_results:
         os.makedirs("results", exist_ok=True)
+        # Don't include images when saving to JSON (images cannot be serialized to JSON)
         results_dataset = create_results_dataset(
-            results, split_dataset, image_column=args.image_column
+            results, split_dataset, image_column=args.image_column, include_images=False
         )
 
         # Create a safe filename
@@ -524,8 +527,9 @@ def main(args):
     # Push to HuggingFace Hub if requested
     if args.push_to_hub:
         print(f"\nPushing results to HuggingFace Hub: {args.push_to_hub}")
+        # Include images when pushing to Hub (Hub supports image format)
         results_dataset = create_results_dataset(
-            results, split_dataset, image_column=args.image_column
+            results, split_dataset, image_column=args.image_column, include_images=True
         )
 
         # Create a dataset dict with the results
