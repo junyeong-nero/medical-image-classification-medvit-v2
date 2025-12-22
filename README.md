@@ -1,22 +1,28 @@
-# Brain Tumor Classification with MedViT-v2
+# MedViT-v2 Fine-tuning for Medical Image Classification
 
-A deep learning project for classifying brain tumors from MRI images using **[MedViT-v2](https://github.com/Omid-Nejati/MedViTV2)** (Medical Vision Transformer).
+A deep learning project for fine-tuning **[MedViT-v2](https://github.com/Omid-Nejati/MedViTV2)** (Medical Vision Transformer) on various medical image classification datasets.
 
 ## Overview
 
-This project implements an automated brain tumor classification system using MedViT-v2, a hybrid transformer architecture optimized for medical imaging. It supports 4 tumor categories: **Glioma, Meningioma, Pituitary, and No Tumor**.
+This project provides a flexible pipeline for fine-tuning MedViT-v2, a hybrid transformer architecture optimized for medical imaging. It supports any HuggingFace image classification dataset and has been tested on brain tumor MRI and colorectal cancer histology datasets.
 
 ### Key Features
 
-- **Hybrid Architecture**: MedViT-v2 combines CNNs and Transformers for optimal performance.
-- **Multi-Device Support**: Automatic detection for CUDA (NVIDIA), MPS (Apple Silicon), and CPU.
-- **Flexible Data**: Supports any HuggingFace image classification dataset.
+- **Hybrid Architecture**: MedViT-v2 combines CNNs and Transformers for optimal performance
+- **Multi-Device Support**: Automatic detection for CUDA (NVIDIA), MPS (Apple Silicon), and CPU
+- **Flexible Data**: Supports any HuggingFace image classification dataset
 - **Comprehensive Metrics**: Accuracy, Precision, Recall, F1-score, AUC-ROC, etc.
 
-## Dataset
+## Supported Datasets
 
-**Source**: [PranomVignesh/MRI-Images-of-Brain-Tumor](https://huggingface.co/datasets/PranomVignesh/MRI-Images-of-Brain-Tumor)
-**Input**: 224×224 MRI images
+Any HuggingFace image classification dataset can be used. Tested datasets include:
+
+| Dataset | Classes | Task |
+|---------|---------|------|
+| [PranomVignesh/MRI-Images-of-Brain-Tumor](https://huggingface.co/datasets/PranomVignesh/MRI-Images-of-Brain-Tumor) | 4 | Brain tumor classification (MRI) |
+| [junyeong-nero/mini-NCTCRCHE100K](https://huggingface.co/datasets/junyeong-nero/mini-NCTCRCHE100K) | 9 | Colorectal cancer tissue classification (Histology) |
+
+**Input**: 224×224 images
 
 ## Model Architecture
 
@@ -31,7 +37,7 @@ This project implements an automated brain tumor classification system using Med
 ```bash
 # Clone and install dependencies
 git clone <repository-url>
-cd medical-test
+cd medvit-finetuning
 uv sync  # or: pip install -r requirements.txt
 source .venv/bin/activate
 ```
@@ -118,13 +124,6 @@ uv run python src/inference.py \
 
 ## Results
 
-### Datasets
-
-| Dataset | Classes | Description |
-|---------|---------|-------------|
-| [PranomVignesh/MRI-Images-of-Brain-Tumor](https://huggingface.co/datasets/PranomVignesh/MRI-Images-of-Brain-Tumor) | 4 | glioma, meningioma, no-tumor, pituitary |
-| [junyeong-nero/mini-NCTCRCHE100K](https://huggingface.co/datasets/junyeong-nero/mini-NCTCRCHE100K) | 9 | ADI, BACK, DEB, LYM, MUC, MUS, NORM, STR, TUM |
-
 ### Test Metrics (MedViT_tiny)
 
 | Dataset | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
@@ -158,7 +157,7 @@ uv run python src/inference.py \
 ## Project Structure
 
 ```
-brain-tumor-classifier/
+medvit-finetuning/
 ├── src/
 │   ├── models/            # MedViT-v2 architecture definitions
 │   ├── train.py           # Training script
