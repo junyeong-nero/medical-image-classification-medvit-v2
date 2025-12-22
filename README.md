@@ -116,6 +116,45 @@ uv run python src/inference.py \
 - Predictions: `results/{model}_{dataset}_{split}.json` (when `--save_results True`)
 - Metrics: `results/{model}_{dataset}_{split}_metrics.json` (when `--evaluate True`)
 
+## Results
+
+### Datasets
+
+| Dataset | Classes | Description |
+|---------|---------|-------------|
+| [PranomVignesh/MRI-Images-of-Brain-Tumor](https://huggingface.co/datasets/PranomVignesh/MRI-Images-of-Brain-Tumor) | 4 | glioma, meningioma, no-tumor, pituitary |
+| [junyeong-nero/mini-NCTCRCHE100K](https://huggingface.co/datasets/junyeong-nero/mini-NCTCRCHE100K) | 9 | ADI, BACK, DEB, LYM, MUC, MUS, NORM, STR, TUM |
+
+### Test Metrics (MedViT_tiny)
+
+| Dataset | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
+|---------|----------|-----------|--------|----------|---------|
+| MRI-Images-of-Brain-Tumor | 96.65% | 96.71% | 96.65% | 96.60% | 99.66% |
+| mini-NCTCRCHE100K | 93.54% | 93.53% | 93.54% | 93.52% | 99.59% |
+
+### Per-Class F1 Scores
+
+**MRI-Images-of-Brain-Tumor**
+| Class | F1-Score |
+|-------|----------|
+| glioma | 100.00% |
+| meningioma | 92.31% |
+| no-tumor | 97.00% |
+| pituitary | 96.53% |
+
+**mini-NCTCRCHE100K**
+| Class | F1-Score |
+|-------|----------|
+| ADI | 100.00% |
+| BACK | 99.05% |
+| DEB | 92.44% |
+| LYM | 98.36% |
+| MUC | 91.95% |
+| MUS | 90.08% |
+| NORM | 93.33% |
+| STR | 81.25% |
+| TUM | 94.44% |
+
 ## Project Structure
 
 ```
