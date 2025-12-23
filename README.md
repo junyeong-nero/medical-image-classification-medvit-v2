@@ -122,6 +122,33 @@ uv run python src/inference.py \
 - Predictions: `results/{model}_{dataset}_{split}.json` (when `--save_results True`)
 - Metrics: `results/{model}_{dataset}_{split}_metrics.json` (when `--evaluate True`)
 
+### Attention Map Visualization
+
+Visualize attention maps from trained MedViT models to understand where the model focuses:
+
+```bash
+# Quick visualization
+bash scripts/visualize.sh --image_path ./sample.jpg
+
+# With custom checkpoint
+bash scripts/visualize.sh \
+    --image_path ./sample.jpg \
+    --checkpoint_path ./weights/MedViT_tiny_brain_tumor.pth \
+    --output_path ./attention_result.png
+```
+
+**Arguments**:
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `--image_path` | Path to input image | Required |
+| `--checkpoint_path` | Path to model checkpoint | `./checkpoint/MedViT_tiny_*.pth` |
+| `--model_name` | Model architecture | `MedViT_tiny` |
+| `--num_classes` | Number of output classes | `4` |
+| `--output_path` | Path to save visualization | `./attention_visualization.png` |
+| `--cmap` | Colormap for attention overlay | `jet` |
+| `--alpha` | Transparency of overlay (0-1) | `0.5` |
+| `--no-show` | Do not display visualization window | - |
+
 ## Results
 
 ### Test Metrics (MedViT_tiny)
@@ -154,19 +181,40 @@ uv run python src/inference.py \
 | STR | 81.25% |
 | TUM | 94.44% |
 
+### Attention Map Visualization Examples
+
+MedViT uses two types of attention: **Neighborhood Attention (local)** in LFP blocks and **E-MHSA (global)** in GFP blocks. Below are visualization examples showing where the model focuses when making predictions.
+
+**Brain Tumor MRI Classification**
+
+| Input Image | Attention Map |
+|-------------|---------------|
+| ![Brain Tumor Input](assets/brain-tumor-001.jpg) | ![Brain Tumor Attention](assets/brain-tumor-001-attention-visualization.png) |
+
+**Colorectal Cancer Histology Classification**
+
+| Input Image | Attention Map |
+|-------------|---------------|
+| ![NCTCRCHE100K Input](assets/NCTCRCHE100K-001.jpg) | ![NCTCRCHE100K Attention](assets/NCTCRCHE100K-001-attention-visualization.png) |
+
 ## Project Structure
 
 ```
 medvit-finetuning/
 ├── src/
-│   ├── models/            # MedViT-v2 architecture definitions
-│   ├── train.py           # Training script
-│   ├── inference.py       # Inference & evaluation script
-│   ├── dataset_builder.py # Dataset loading and preprocessing
-│   └── utils.py           # Helper utilities
+│   ├── models/               # MedViT-v2 architecture definitions
+│   ├── train.py              # Training script
+│   ├── inference.py          # Inference & evaluation script
+│   ├── visualize_attention.py # Attention map visualization
+│   ├── dataset_builder.py    # Dataset loading and preprocessing
+│   └── utils.py              # Helper utilities
 ├── scripts/
-│   ├── train.sh           # Training helper script
-│   └── inference.sh       # Inference helper script
-├── weights/               # Trained model checkpoints
-└── results/               # Predictions and metrics (JSON)
+│   ├── train.sh              # Training helper script
+│   ├── inference.sh          # Inference helper script
+│   └── visualize.sh          # Attention visualization script
+├── notebooks/
+│   └── visualize_attention_example.ipynb  # Interactive visualization notebook
+├── assets/                   # Sample images and visualization results
+├── weights/                  # Trained model checkpoints
+└── results/                  # Predictions and metrics (JSON)
 ```
