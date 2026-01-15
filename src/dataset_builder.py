@@ -21,6 +21,24 @@ class GenericImageDataset(torch.utils.data.Dataset):
         self.image_column = image_column
         self.label_column = label_column
 
+        # Build label-to-index mapping for encoding string labels
+        self.label_to_idx = {}
+        self.idx_to_label = {}
+        self._build_label_mapping()
+
+    def _build_label_mapping(self):
+        """Build label-to-index mapping from the dataset."""
+        # Get unique labels from the dataset
+        unique_labels = set()
+        for idx in range(len(self.hf_dataset)):
+            label = self.hf_dataset[idx][self.label_column]
+            unique_labels.add(label)
+
+        # Create mapping
+        for idx, label in enumerate(sorted(unique_labels)):
+            self.label_to_idx[label] = idx
+            self.idx_to_label[idx] = label
+
     def __len__(self):
         return len(self.hf_dataset)
 
@@ -35,6 +53,10 @@ class GenericImageDataset(torch.utils.data.Dataset):
 
         if self.transform:
             image = self.transform(image)
+
+        # Encode label: convert string to integer index
+        if isinstance(label, str):
+            label = self.label_to_idx[label]
 
         return image, label
 

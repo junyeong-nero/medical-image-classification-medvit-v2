@@ -10,7 +10,7 @@ import torch.utils.data as data
 
 from dataset_builder import build_dataset
 from tqdm import tqdm
-from medmnist import INFO, Evaluator
+
 from sklearn.metrics import (
     precision_score,
     recall_score,
@@ -67,96 +67,7 @@ def get_device():
     return device
 
 
-# Define the MNIST training routine
-def train_mnist(
-    epochs,
-    net,
-    train_loader,
-    test_loader,
-    optimizer,
-    scheduler,
-    loss_function,
-    device,
-    save_path,
-    data_flag,
-    task,
-):
-    best_acc = 0.0
-    for epoch in range(epochs):
-        net.train()
-        running_loss = 0.0
-        train_bar = tqdm(train_loader, file=sys.stdout)
-        for step, datax in enumerate(train_bar):
-            images, labels = datax
-            images, labels = images.to(device), labels.to(device)
-            optimizer.zero_grad()
-            outputs = net(images)
-
-            if task == "multi-label, binary-class":
-                labels = labels.to(torch.float32)
-                loss = loss_function(outputs, labels)
-            else:
-                labels = labels.squeeze().long()
-                loss = loss_function(outputs.squeeze(0), labels)
-
-            loss.backward()
-            optimizer.step()
-            scheduler.step()
-            running_loss += loss.item()
-
-            train_bar.desc = f"train epoch[{epoch + 1}/{epochs}] loss:{loss:.3f}"
-
-        net.eval()
-        y_score = torch.tensor([])
-        with torch.no_grad():
-            val_bar = tqdm(test_loader, file=sys.stdout)
-            for val_data in val_bar:
-                inputs, targets = val_data
-                outputs = net(inputs.to(device))
-
-                if task == "multi-label, binary-class":
-                    targets = targets.to(torch.float32)
-                    outputs = outputs.softmax(dim=-1)
-                else:
-                    targets = targets.squeeze().long()
-                    outputs = outputs.softmax(dim=-1)
-                    targets = targets.float().resize_(len(targets), 1)
-
-                y_score = torch.cat((y_score, outputs.cpu()), 0)
-
-        y_score = y_score.detach().numpy()
-        evaluator = Evaluator(data_flag, "test", size=224, root="./data")
-        metrics = evaluator.evaluate(y_score)
-
-        val_accurate, _ = metrics
-        print(
-            f"[epoch {epoch + 1}] train_loss: {running_loss / len(train_loader):.3f}  auc: {metrics[0]:.3f}  acc: {metrics[1]:.3f}"
-        )
-        # print(f'lr: {scheduler.get_last_lr()[-1]:.8f}')
-        if val_accurate > best_acc:
-            best_acc = val_accurate
-            print(f"\n✓ New best AUC: {val_accurate:.4f}")
-            print(f"  Saving checkpoint to {save_path}")
-
-            # Save full checkpoint (for resuming training)
-            state = {
-                "model": net.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "lr_scheduler": scheduler.state_dict(),
-                "acc": best_acc,
-                "epoch": epoch,
-            }
-            torch.save(state, save_path)
-
-            # Save best model weights only (for inference)
-            best_weights_path = save_path.replace(".pth", "_best_weights.pth")
-            torch.save(net.state_dict(), best_weights_path)
-            print(f"  Best model weights saved to {best_weights_path}")
-
-    print("Finished Training")
-
-
-# Define the non-MNIST training routine
+# Define the training routine
 def specificity_per_class(conf_matrix):
     """Calculates specificity for each class."""
     specificity = []
@@ -300,15 +211,8 @@ def main(args):
     # Create directories for weights
     os.makedirs("weights", exist_ok=True)
     os.makedirs("weights/pretrained", exist_ok=True)
-    if args.dataset.endswith("mnist"):
-        info = INFO[args.dataset]
-        task = info["task"]
-        if task == "multi-label, binary-class":
-            loss_function = nn.BCEWithLogitsLoss()
-        else:
-            loss_function = nn.CrossEntropyLoss()
-    else:
-        loss_function = nn.CrossEntropyLoss()
+
+    loss_function = nn.CrossEntropyLoss()
     batch_size = args.batch_size
     lr = args.lr
 
@@ -384,32 +288,17 @@ def main(args):
     safe_dataset_name = dataset_name.replace("/", "_")
     save_path = f"weights/{model_name}_{safe_dataset_name}.pth"
 
-    if dataset_name.endswith("mnist"):
-        train_mnist(
-            epochs,
-            net,
-            train_loader,
-            test_loader,
-            optimizer,
-            scheduler,
-            loss_function,
-            device,
-            save_path,
-            dataset_name,
-            task,
-        )
-    else:
-        train(
-            epochs,
-            net,
-            train_loader,
-            test_loader,
-            optimizer,
-            scheduler,
-            loss_function,
-            device,
-            save_path,
-        )
+    train(
+        epochs,
+        net,
+        train_loader,
+        test_loader,
+        optimizer,
+        scheduler,
+        loss_function,
+        device,
+        save_path,
+    )
 
 
 if __name__ == "__main__":
