@@ -21,6 +21,7 @@ Any HuggingFace image classification dataset can be used. Tested datasets includ
 |---------|---------|------|
 | [PranomVignesh/MRI-Images-of-Brain-Tumor](https://huggingface.co/datasets/PranomVignesh/MRI-Images-of-Brain-Tumor) | 4 | Brain tumor classification (MRI) |
 | [junyeong-nero/mini-NCTCRCHE100K](https://huggingface.co/datasets/junyeong-nero/mini-NCTCRCHE100K) | 9 | Colorectal cancer tissue classification (Histology) |
+| [junyeong-nero/mini-breast-histopathology-images](https://huggingface.co/datasets/junyeong-nero/mini-breast-histopathology-images) | 2 | Breast cancer classification (IDC vs non-IDC, Histology) |
 
 **Input**: 224×224 images
 
@@ -157,6 +158,7 @@ bash scripts/visualize.sh \
 |---------|----------|-----------|--------|----------|---------|
 | MRI-Images-of-Brain-Tumor | 96.65% | 96.71% | 96.65% | 96.60% | 99.66% |
 | mini-NCTCRCHE100K | 93.54% | 93.53% | 93.54% | 93.52% | 99.59% |
+| mini-breast-histopathology-images | 86.18% | 83.04% | 82.63% | 82.83% | - |
 
 ### Per-Class F1 Scores
 
@@ -180,6 +182,12 @@ bash scripts/visualize.sh \
 | NORM | 93.33% |
 | STR | 81.25% |
 | TUM | 94.44% |
+
+**mini-breast-histopathology-images**
+| Class | F1-Score |
+|-------|----------|
+| IDC | 75.25% |
+| non-IDC | 90.41% |
 
 ### Attention Map Visualization Examples
 
