@@ -33,7 +33,7 @@ uv run python src/inference.py \
     --model_weights "$MODEL_WEIGHTS" \
     --dataset "$DATASET_NAME" \
     --split "$SPLIT" \
-    --batch_size 16 \
+    --batch_size 8 \
     --image_column "$IMAGE_COLUMN" \
     --label_column "$LABEL_COLUMN" \
     --evaluate True \
